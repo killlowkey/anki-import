@@ -1,7 +1,12 @@
 package anki
 
-type RequestData struct {
+type Request struct {
 	Action  string `json:"action"`
 	Version int    `json:"version"`
 	Params  any    `json:"params"`
+}
+
+type AddNoteResp struct {
+	Result []int64     `json:"result"`
+	Error  interface{} `json:"error"`
 }

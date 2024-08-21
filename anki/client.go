@@ -32,21 +32,23 @@ func NewClient(baseUrl string, options ...Option) *Client {
 	return client
 }
 
-func (c *Client) postRequest(body any) (string, error) {
+func (c *Client) postRequest(body any, resp any) error {
 	resp, err := c.httpClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody(body).
+		SetResult(&resp).
 		Post("/")
 
 	if err != nil {
-		return "", fmt.Errorf("error occurred: %v", err)
+		return fmt.Errorf("error occurred: %v", err)
 	}
 
-	return resp.String(), nil
+	return nil
 }
 
-func (c *Client) AddNotes(notes []Note) (string, error) {
-	data := RequestData{
+// AddNotes 批量添加笔记，返回笔记 id
+func (c *Client) AddNotes(notes []Note) ([]int64, error) {
+	data := Request{
 		Action:  "addNotes",
 		Version: 6,
 		Params: map[string]any{
@@ -54,9 +56,25 @@ func (c *Client) AddNotes(notes []Note) (string, error) {
 		},
 	}
 
-	return c.postRequest(data)
+	var addNotesResp AddNoteResp
+	if err := c.postRequest(data, &addNotesResp); err != nil {
+		return nil, err
+	}
+
+	if addNotesResp.Error != "" {
+		return nil, fmt.Errorf("error occurred: %v", addNotesResp.Error)
+	}
+
+	return addNotesResp.Result, nil
 }
 
-func (c *Client) AddNote(note Note) (string, error) {
-	return c.AddNotes([]Note{note})
+// AddNote 添加笔记，返回笔记 id
+func (c *Client) AddNote(note Note) (int64, error) {
+	if notes, err := c.AddNotes([]Note{note}); err != nil {
+		return -1, err
+	} else if len(notes) <= 0 {
+		return -1, fmt.Errorf("note id is empty")
+	} else {
+		return notes[0], nil
+	}
 }

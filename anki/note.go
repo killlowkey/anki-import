@@ -30,12 +30,12 @@ type Media struct {
 
 // Note 表示要添加到 Anki 中的一条笔记。
 type Note struct {
-	DeckName  string            `json:"deckName"`  // 笔记将添加到的牌组名称
-	ModelName string            `json:"modelName"` // 使用的笔记模型名称
-	Fields    map[string]string `json:"fields"`    // 笔记的字段内容，包括正面和背面
-	Options   Options           `json:"options"`   // 笔记的选项，包括重复检查设置
-	Tags      []string          `json:"tags"`      // 笔记的标签列表
-	Audio     []Media           `json:"audio"`     // 与笔记关联的音频文件
-	Video     []Media           `json:"video"`     // 与笔记关联的视频文件
-	Picture   []Media           `json:"picture"`   // 与笔记关联的图片文件
+	DeckName  string   `json:"deckName"`  // 笔记将添加到的牌组名称
+	ModelName string   `json:"modelName"` // 使用的笔记模型名称
+	Fields    any      `json:"fields"`    // 笔记的字段内容，包括正面和背面
+	Options   Options  `json:"options"`   // 笔记的选项，包括重复检查设置
+	Tags      []string `json:"tags"`      // 笔记的标签列表
+	Audio     []Media  `json:"audio"`     // 与笔记关联的音频文件
+	Video     []Media  `json:"video"`     // 与笔记关联的视频文件
+	Picture   []Media  `json:"picture"`   // 与笔记关联的图片文件
 }
