@@ -74,10 +74,10 @@ func (c *Client) TranslateWord(word string) (explain string, entry string, err e
 
 // AudioUk 单词英音
 func (c *Client) AudioUk(word string) string {
-	return "http://dict.youdao.com/dictvoice?type=1&audio=" + word
+	return "http://dict.youdao.com/dictvoice?type=1&audio=" + url.QueryEscape(word)
 }
 
 // AudioUS 单词美音
 func (c *Client) AudioUS(word string) string {
-	return "http://dict.youdao.com/dictvoice?type=0&audio=" + word
+	return "http://dict.youdao.com/dictvoice?type=0&audio=" + url.QueryEscape(word)
 }

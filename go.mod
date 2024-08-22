@@ -8,6 +8,7 @@ require (
 )
 
 require (
+	github.com/gocarina/gocsv v0.0.0-20240520201108-78e41c74b4b1 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/tealeg/xlsx v1.0.5 // indirect

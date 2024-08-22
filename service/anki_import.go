@@ -2,6 +2,8 @@ package service
 
 import (
 	"anki-import/anki"
+	"anki-import/dict"
+	"anki-import/tts"
 	"anki-import/util"
 	"anki-import/youdao"
 	"fmt"
@@ -30,11 +32,13 @@ type Word struct {
 type AnkiImport struct {
 	youDaoClient *youdao.Client
 	ankiClient   *anki.Client
-	deckName     string   // 添加到那个 deck
-	modelName    string   // note 模板
-	tags         []string // note 的 tags
-	success      func(word Word, noteId int64)
-	failed       func(word Word, err error)
+	ttsClient    *tts.Client
+	dict         *dict.Dict
+	deckName     string                        // 添加到那个 deck
+	modelName    string                        // note 模板
+	tags         []string                      // note 的 tags
+	success      func(word Word, noteId int64) // 成功回调
+	failed       func(word Word, err error)    // 失败回调
 }
 
 type Option func(ankiImport *AnkiImport)
@@ -63,10 +67,21 @@ func WithDebug() Option {
 	}
 }
 
+func WithDict(wordFilepath, translationFilepath string, comma rune) Option {
+	return func(ankiImport *AnkiImport) {
+		// 设置分隔符
+		ankiImport.dict.SetComma(comma)
+		if err := ankiImport.dict.LoadDict(wordFilepath, translationFilepath); err != nil {
+			panic(err)
+		}
+	}
+}
+
 func NewImport(ankiBaseUrl, deckName, modelName string, options ...Option) *AnkiImport {
 	a := &AnkiImport{
 		youDaoClient: youdao.NewClient(),
 		ankiClient:   anki.NewClient(ankiBaseUrl),
+		dict:         dict.NewDict(),
 		deckName:     deckName,
 		modelName:    modelName,
 	}
@@ -90,18 +105,22 @@ func (s *AnkiImport) ImportWithSheet(xlsxFilepath, sheetName string) error {
 
 	// 翻译单词含义
 	for index, word := range words {
-		// 不是单词
-		if !util.IsWord(word.Word) {
-			continue
-		}
+		// 是单词
+		if util.IsWord(word.Word) {
+			// 翻译
+			if word.DefinitionCn == "" {
+				if explain, _, err1 := s.youDaoClient.TranslateWord(word.Word); err1 == nil {
+					words[index].DefinitionCn = explain
+				}
+			}
 
-		// 翻译
-		if word.DefinitionCn == "" {
-			if explain, _, err1 := s.youDaoClient.TranslateWord(word.Word); err1 == nil {
-				words[index].DefinitionCn = explain
+			// 需要添加美式音标
+			if w, ok := s.dict.Explain(word.Word); ok {
+				words[index].IpaUs = w.PhoneticUS
 			}
 		}
 
+		// 美英
 		words[index].IpaAudio = s.youDaoClient.AudioUS(word.Word)
 	}
 

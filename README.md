@@ -3,7 +3,7 @@
 
 等号后面接单词，例如：http://dict.youdao.com/dictvoice?audio=the
 
-英音和美音：
+英音和美音（需要进行 url 编码）：
 1. 英音：http://dict.youdao.com/dictvoice?type=1&audio=
 2. 美音：http://dict.youdao.com/dictvoice?type=0&audio=
 
@@ -23,12 +23,31 @@ http://fanyi.youdao.com/translate?&doctype=json&type=AUTO&i=English-speaking%20w
 
 ## microsoft tts
 1. https://github.com/rany2/edge-tts
+   ```text
+   word.csv 单词
+   字段名	类型	说明	示例
+   vc_id	string	单词id	57067c89a172044907c6698e
+   vc_vocabulary	string	单词	superspecies
+   vc_phonetic_uk	string	uk英音音标	[su:pərsˈpi:ʃi:z]
+   vc_phonetic_us	string	us美音音标	[supɚsˈpiʃiz]
+   vc_frequency	float	词频	0.000000
+   vc_difficulty	int	难度	1
+   vc_acknowledge_rate	float	认识率	0.664122
+   
+   word_translation.csv 单词及其中文翻译
+   字段名	类型	说明	示例
+   word	string	单词	brain
+   translation	string	单词的中文翻译	n.脑,头脑
+    ```
 2. https://github.com/surfaceyu/edge-tts-go
 
 
 ## anki connect plugin
 1. https://ankiweb.net/shared/info/2055492159
 
+## 本地词库
+1. https://github.com/LinXueyuanStdio/DictionaryData
+2. https://github.com/skywind3000/ECDICT
 
 ## 卡片模板
 
