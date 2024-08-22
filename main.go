@@ -12,7 +12,7 @@ func main() {
 		"english-word",
 		service.WithNoteTags([]string{"哈利波特与魔法石"}),
 		//service.WithDebug(),
-		service.WithDict("./dict/word.csv", "./dict/word_translation.csv", '>'),
+		service.WithDict("./dict/word.csv", "./dict/word_translation.csv"),
 		service.WithSuccessCallback(func(word service.Word, noteId int64) {
 			log.Println("添加成功：", noteId)
 		}),

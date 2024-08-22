@@ -67,10 +67,8 @@ func WithDebug() Option {
 	}
 }
 
-func WithDict(wordFilepath, translationFilepath string, comma rune) Option {
+func WithDict(wordFilepath, translationFilepath string) Option {
 	return func(ankiImport *AnkiImport) {
-		// 设置分隔符
-		ankiImport.dict.SetComma(comma)
 		if err := ankiImport.dict.LoadDict(wordFilepath, translationFilepath); err != nil {
 			panic(err)
 		}
