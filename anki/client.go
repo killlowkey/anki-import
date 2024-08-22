@@ -32,6 +32,10 @@ func NewClient(baseUrl string, options ...Option) *Client {
 	return client
 }
 
+func (c *Client) SetDebug(debug bool) {
+	c.httpClient.SetDebug(debug)
+}
+
 func (c *Client) postRequest(body any, resp any) error {
 	resp, err := c.httpClient.R().
 		SetHeader("Content-Type", "application/json").

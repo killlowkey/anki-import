@@ -7,6 +7,6 @@ type Request struct {
 }
 
 type AddNoteResp struct {
-	Result []int64     `json:"result"`
-	Error  interface{} `json:"error"`
+	Result []int64 `json:"result"`
+	Error  string  `json:"error"`
 }

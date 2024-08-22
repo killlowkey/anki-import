@@ -6,12 +6,12 @@ import (
 )
 
 var displayShortMap = map[string]string{
-	"晓晓":        "zh-CN-XiaoxiaoNeural",
-	"晓伊":        "zh-CN-XiaoyiNeural",
-	"云健":        "zh-CN-YunjianNeural",
-	"云希":        "zh-CN-YunxiNeural",
-	"云夏":        "zh-CN-YunxiaNeural",
-	"云扬":        "zh-CN-YunyangNeural",
+	"晓晓":          "zh-CN-XiaoxiaoNeural",
+	"晓伊":          "zh-CN-XiaoyiNeural",
+	"云健":          "zh-CN-YunjianNeural",
+	"云希":          "zh-CN-YunxiNeural",
+	"云夏":          "zh-CN-YunxiaNeural",
+	"云扬":          "zh-CN-YunyangNeural",
 	"Aria":        "en-US-AriaNeural",
 	"Guy":         "en-US-GuyNeural",
 	"Jenny":       "en-US-JennyNeural",
