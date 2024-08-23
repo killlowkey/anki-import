@@ -154,4 +154,20 @@ func TestClient_All(t *testing.T) {
 	// 删除 note
 	err = client.DeleteNote([]int64{noteId})
 	assert.NoError(t, err)
+
+	// 是否存在
+	_, err = client.NoteInfo(noteId)
+	assert.Error(t, err)
+	assert.ErrorContains(t, err, "note id is empty")
+}
+
+func TestClient_FindNotes(t *testing.T) {
+	client := NewClient("http://localhost:8765", WithDebug())
+	noteIds, err := client.FindNotes("deck:哈利波特与魔法石")
+	assert.NoError(t, err)
+	assert.NotEmpty(t, noteIds)
+
+	noteInfos, err := client.NotesInfo(noteIds)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, noteInfos)
 }

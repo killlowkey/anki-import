@@ -85,6 +85,7 @@ func (c *Client) AddNote(note Note) (int64, error) {
 
 // FindNotes 查找笔记
 // query 语法：https://docs.ankiweb.net/searching.html
+// 搜索 deck(french deck 名): deck:french
 func (c *Client) FindNotes(query string) ([]int64, error) {
 	data := Request{
 		Action:  "findNotes",
@@ -132,6 +133,8 @@ func (c *Client) NoteInfo(id int64) (NoteInfo, error) {
 	if err != nil {
 		return NoteInfo{}, err
 	} else if len(info) <= 0 {
+		return NoteInfo{}, fmt.Errorf("note id is empty")
+	} else if info[0].NoteId == 0 {
 		return NoteInfo{}, fmt.Errorf("note id is empty")
 	} else {
 		return info[0], nil
