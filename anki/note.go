@@ -39,3 +39,18 @@ type Note struct {
 	Video     []Media  `json:"video"`     // 与笔记关联的视频文件
 	Picture   []Media  `json:"picture"`   // 与笔记关联的图片文件
 }
+
+type NoteField struct {
+	Value string `json:"value"`
+	Order int    `json:"order"`
+}
+
+type NoteInfo struct {
+	NoteId    int64                `json:"noteId"`
+	Profile   string               `json:"profile"`
+	ModelName string               `json:"modelName"`
+	Tags      []string             `json:"tags"`
+	Fields    map[string]NoteField `json:"fields"`
+	Mod       int64                `json:"mod"`
+	Cards     []int64              `json:"cards"`
+}

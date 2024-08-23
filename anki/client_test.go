@@ -1,6 +1,9 @@
 package anki
 
-import "testing"
+import (
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
 
 func Test_AddNote1(t *testing.T) {
 	note := Note{
@@ -84,4 +87,71 @@ func Test_AddNote2(t *testing.T) {
 
 	client := NewClient("http://localhost:8765", WithDebug())
 	client.AddNote(note)
+}
+
+func TestClient_All(t *testing.T) {
+	client := NewClient("http://localhost:8765", WithDebug())
+
+	// 添加
+	note := Note{
+		DeckName:  "哈利波特与魔法石",
+		ModelName: "english-word",
+		Fields: map[string]string{
+			"word":              "test-test-test",               // 单词
+			"ipa_uk":            "/ɪɡˈzɑːm.pəl/",                // 英式音标
+			"ipa_us":            "/ɪɡˈzæm.pəl/",                 // 美式音标
+			"ipa_audio":         "",                             // 音频
+			"definition_cn":     "n. 例子；实例<br>n. 例子；实例",         // 翻译
+			"source_name1":      "example1",                     // 来源1
+			"source_content1":   "This is an example sentence.", // 来源1内容
+			"source_translate1": "这是一个例句。",                      // 来源1翻译
+			"source_name2":      "",                             // 来源2
+			"source_content2":   "",                             // 来源2内容
+			"source_translate2": "",                             // 来源2翻译
+			"examples1_en":      "",                             // 例子2内容
+			"examples1_cn":      "",                             // 例子2翻译
+			"examples2_en":      "",                             // 例子2内容
+			"examples2_cn":      "",                             // 例子2翻译
+		},
+		Tags: []string{"哈利波特与魔法石"},
+		Audio: []Media{
+			{
+				URL:      "http://dict.youdao.com/dictvoice?type=0&audio=example",
+				Filename: "example.mp3",
+				SkipHash: "7e2c2f954ef6051373ba916f000168dc",
+				Fields:   []string{"ipa_audio"}, // 关联音频
+			},
+		},
+	}
+	noteId, err := client.AddNote(note)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, noteId)
+
+	// 获取 note 信息
+	noteInfo, err := client.NoteInfo(noteId)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, noteInfo)
+	assert.Equal(t, "test-test-test", noteInfo.Fields["word"].Value)
+	assert.Equal(t, 1, len(noteInfo.Tags))
+	assert.Equal(t, "哈利波特与魔法石", noteInfo.Tags[0])
+
+	// 更新 note
+	err = client.UpdateNote(UpdateNoteReq{
+		Id: noteId,
+		Fields: map[string]string{
+			"word": "update-test-test-test",
+		},
+		Tags: []string{"哈利波特与魔法石1"},
+	})
+	assert.NoError(t, err)
+
+	// 更新是否成功
+	noteInfo, err = client.NoteInfo(noteId)
+	assert.NoError(t, err)
+	assert.Equal(t, "update-test-test-test", noteInfo.Fields["word"].Value)
+	assert.Equal(t, []string{"哈利波特与魔法石1"}, noteInfo.Tags)
+
+	// 删除 note
+	err = client.DeleteNote([]int64{noteId})
+	assert.NoError(t, err)
 }

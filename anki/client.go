@@ -82,3 +82,100 @@ func (c *Client) AddNote(note Note) (int64, error) {
 		return notes[0], nil
 	}
 }
+
+// FindNotes 查找笔记
+// query 语法：https://docs.ankiweb.net/searching.html
+func (c *Client) FindNotes(query string) ([]int64, error) {
+	data := Request{
+		Action:  "findNotes",
+		Version: 6,
+		Params: map[string]any{
+			"query": query,
+		},
+	}
+
+	var resp FindNotesResp
+	if err := c.postRequest(data, &resp); err != nil {
+		return nil, err
+	}
+
+	if resp.Error != "" {
+		return nil, fmt.Errorf("error occurred: %v", resp.Error)
+	}
+
+	return resp.Result, nil
+}
+
+func (c *Client) NotesInfo(ids []int64) ([]NoteInfo, error) {
+	data := Request{
+		Action:  "notesInfo",
+		Version: 6,
+		Params: map[string]any{
+			"notes": ids,
+		},
+	}
+
+	var resp NotesInfoResp
+	if err := c.postRequest(data, &resp); err != nil {
+		return nil, err
+	}
+
+	if resp.Error != "" {
+		return nil, fmt.Errorf("error occurred: %v", resp.Error)
+	}
+
+	return resp.Result, nil
+}
+
+func (c *Client) NoteInfo(id int64) (NoteInfo, error) {
+	info, err := c.NotesInfo([]int64{id})
+	if err != nil {
+		return NoteInfo{}, err
+	} else if len(info) <= 0 {
+		return NoteInfo{}, fmt.Errorf("note id is empty")
+	} else {
+		return info[0], nil
+	}
+}
+
+func (c *Client) DeleteNote(ids []int64) error {
+	data := Request{
+		Action:  "deleteNotes",
+		Version: 6,
+		Params: map[string]any{
+			"notes": ids,
+		},
+	}
+
+	var resp NotesInfoResp
+	if err := c.postRequest(data, &resp); err != nil {
+		return err
+	}
+
+	if resp.Error != "" {
+		return fmt.Errorf("error occurred: %v", resp.Error)
+	}
+
+	return nil
+}
+
+func (c *Client) UpdateNote(req UpdateNoteReq) error {
+	data := Request{
+		Action:  "updateNote",
+		Version: 6,
+		Params: map[string]any{
+			"note": req,
+		},
+	}
+
+	var resp UpdateNoteResp
+	if err := c.postRequest(data, &resp); err != nil {
+		return err
+	}
+
+	if resp.Error != "" {
+		return fmt.Errorf("error occurred: %v", resp.Error)
+	}
+
+	return nil
+}
