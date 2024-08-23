@@ -8,6 +8,7 @@ import (
 	"anki-import/youdao"
 	"fmt"
 	"github.com/tealeg/xlsx"
+	"log"
 	"strings"
 )
 
@@ -43,30 +44,35 @@ type AnkiImport struct {
 
 type Option func(ankiImport *AnkiImport)
 
+// WithSuccessCallback note 导入成功回调
 func WithSuccessCallback(success func(word Word, noteId int64)) Option {
 	return func(ankiImport *AnkiImport) {
 		ankiImport.success = success
 	}
 }
 
+// WithFailedCallback note 导入失败回调
 func WithFailedCallback(failedCallback func(word Word, err error)) Option {
 	return func(ankiImport *AnkiImport) {
 		ankiImport.failed = failedCallback
 	}
 }
 
+// WithNoteTags deck 笔记的 tags
 func WithNoteTags(noteTags []string) Option {
 	return func(ankiImport *AnkiImport) {
 		ankiImport.tags = noteTags
 	}
 }
 
+// WithDebug 开启调试模式
 func WithDebug() Option {
 	return func(ankiImport *AnkiImport) {
 		ankiImport.ankiClient.SetDebug(true)
 	}
 }
 
+// WithDict 导入本地字典，csv 格式
 func WithDict(wordFilepath, translationFilepath string) Option {
 	return func(ankiImport *AnkiImport) {
 		if err := ankiImport.dict.LoadDict(wordFilepath, translationFilepath); err != nil {
@@ -95,11 +101,34 @@ func (s *AnkiImport) Import(xlsxFilepath string) error {
 	return s.ImportWithSheet(xlsxFilepath, "")
 }
 
-func (s *AnkiImport) ImportWithSheet(xlsxFilepath, sheetName string) error {
-	words, err := s.read(xlsxFilepath, sheetName)
-	if err != nil {
+func (s *AnkiImport) ImportWithSheet(xlsxFilepath, sheetName string) (err error) {
+	var (
+		words    []Word
+		m        map[string]struct{}
+		counters int64
+	)
+
+	// 从 xlsx 读取所有单词
+	if words, err = s.read(xlsxFilepath, sheetName); err != nil {
 		return err
 	}
+
+	// 从 anki 获取 deck 所有单词
+	if _, m, err = s.FindAllWordFromAnki(s.deckName); err != nil {
+		return err
+	}
+
+	// 对重复单词进行过滤
+	words = util.Filter(words, func(word Word) bool {
+		if _, ok := m[word.Word]; !ok {
+			return true
+		} else {
+			counters++
+			return false
+		}
+	})
+
+	log.Printf("在【%s】牌组中发现 %d 个重复单词，本次需要导入 %d 个单词\n", s.deckName, counters, len(words))
 
 	// 翻译单词含义
 	for index, word := range words {
@@ -161,6 +190,32 @@ func (s *AnkiImport) ImportWithSheet(xlsxFilepath, sheetName string) error {
 	return nil
 }
 
+// FindAllWordFromAnki 从 anki 获取名为 deckName 的 deck 所有单词
+func (s *AnkiImport) FindAllWordFromAnki(deckName string) ([]string, map[string]struct{}, error) {
+	// 判断是否有该 word，简单处理一下
+	noteIds, err := s.ankiClient.FindNotes(fmt.Sprintf("deck:%s", deckName))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	noteInfos, err := s.ankiClient.NotesInfo(noteIds)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var (
+		res []string
+		m   = make(map[string]struct{})
+	)
+	for _, noteInfo := range noteInfos {
+		if v, ok := noteInfo.Fields["word"]; ok {
+			res = append(res, v.Value)
+			m[v.Value] = struct{}{}
+		}
+	}
+	return res, m, nil
+}
+
 func (s *AnkiImport) read(xlsxFilepath, sheetName string) ([]Word, error) {
 	// open an existing file
 	wb, err := xlsx.OpenFile(xlsxFilepath)
@@ -173,11 +228,14 @@ func (s *AnkiImport) read(xlsxFilepath, sheetName string) ([]Word, error) {
 		sheetName = "Sheet1"
 	}
 
-	sh := wb.Sheet[sheetName]
+	sh, ok := wb.Sheet[sheetName]
+	if !ok {
+		return nil, fmt.Errorf("not found %s sheet data", sheetName)
+	}
 
 	var data []Word
 	for i := 1; i < sh.MaxRow; i++ {
-		if sh.Cell(i, 1).String() == "" || sh.MaxCol < 13 {
+		if sh.Cell(i, 0).String() == "" || sh.MaxCol < 13 {
 			continue
 		}
 
