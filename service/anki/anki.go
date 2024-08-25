@@ -8,6 +8,7 @@ import (
 	"anki-import/youdao"
 	"fmt"
 	"log"
+	"reflect"
 )
 
 type AnkiImportService struct {
@@ -92,26 +93,17 @@ func (s *AnkiImportService) ImportNote(importer WordImporter) error {
 
 func (s *AnkiImportService) ImportNoteWithWords(words []Word) (err error) {
 	var (
-		m        map[string]struct{}
-		counters int64
+		m              map[string]anki.NoteInfo
+		updateWords    = make(map[string]int64)
+		counters       = len(words)
+		addCounters    int
+		updateCounters int
 	)
 
 	// 从 anki 获取 deck 所有单词
 	if _, m, err = s.FindAllWordFromAnki(s.deckName); err != nil {
 		return err
 	}
-
-	// 对重复单词进行过滤
-	words = util.Filter(words, func(word Word) bool {
-		if _, ok := m[word.Word]; !ok {
-			return true
-		} else {
-			counters++
-			return false
-		}
-	})
-
-	log.Printf("在【%s】牌组中发现 %d 个重复单词，本次需要导入 %d 个单词\n", s.deckName, counters, len(words))
 
 	// 翻译单词含义
 	for index, word := range words {
@@ -134,33 +126,43 @@ func (s *AnkiImportService) ImportNoteWithWords(words []Word) (err error) {
 		words[index].IpaAudio = s.youDaoClient.AudioUS(word.Word)
 	}
 
+	// 对重复单词进行过滤
+	words = util.Filter(words, func(word Word) bool {
+		noteInfo, ok := m[word.Word]
+		// 需要创建
+		if !ok {
+			addCounters++
+			return true
+		}
+
+		// 判断是否需要更新
+		if s.isNeedUpdate(word, noteInfo) {
+			updateWords[word.Word] = noteInfo.NoteId
+			updateCounters++
+			return true
+		} else {
+			return false
+		}
+	})
+
+	log.Printf("在【%s】牌组中发现 %d 个重复单词，本次需要导入 %d 个单词, 更新 %d 个单词\n",
+		s.deckName, (counters-updateCounters)-addCounters, addCounters, updateCounters)
+
 	// 同步数据
 	for _, word := range words {
-		note := anki.Note{
-			DeckName:  s.deckName,
-			ModelName: s.modelName,
-			Tags:      s.tags,
+		var (
+			noteId int64
+			err1   error
+			ok     bool
+		)
+
+		if noteId, ok = updateWords[word.Word]; !ok {
+			noteId, err1 = s.AddWord(word)
+		} else {
+			err1 = s.UpdateWord(noteId, word)
 		}
 
-		// 处理音频
-		if word.IpaAudio != "" {
-			note.Audio = []anki.Media{
-				{
-					URL:      word.IpaAudio,
-					Filename: fmt.Sprintf("%s.mp3", word.Word),
-					SkipHash: util.GetMD5Hash(word.IpaAudio),
-					Fields:   []string{"ipa_audio"}, // 关联音频
-				},
-			}
-			// 需要置空，不然声音那边会显示这个链接
-			word.IpaAudio = ""
-		}
-
-		// 最后赋值
-		note.Fields = word
-
-		// 调用回调
-		if noteId, err1 := s.ankiClient.AddNote(note); err1 != nil {
+		if err1 != nil {
 			if s.failed != nil {
 				s.failed(word, err1)
 			}
@@ -169,12 +171,74 @@ func (s *AnkiImportService) ImportNoteWithWords(words []Word) (err error) {
 				s.success(word, noteId)
 			}
 		}
+
 	}
 	return nil
 }
 
+func (s *AnkiImportService) AddWord(word Word) (int64, error) {
+	note := anki.Note{
+		DeckName:  s.deckName,
+		ModelName: s.modelName,
+		Tags:      s.tags,
+	}
+
+	// 处理音频
+	if word.IpaAudio != "" {
+		note.Audio = []anki.Media{
+			{
+				URL:      word.IpaAudio,
+				Filename: fmt.Sprintf("%s.mp3", word.Word),
+				SkipHash: util.GetMD5Hash(word.IpaAudio),
+				Fields:   []string{"ipa_audio"}, // 关联音频
+			},
+		}
+		// 需要置空，不然声音那边会显示这个链接
+		word.IpaAudio = ""
+	}
+
+	// 最后赋值
+	note.Fields = word
+	return s.ankiClient.AddNote(note)
+}
+
+func (s *AnkiImportService) UpdateWord(noteId int64, word Word) error {
+	fields, err := util.StructToMap(&word)
+	if err != nil {
+		return err
+	}
+
+	// 不更新音频
+	delete(fields, "ipa_audio")
+
+	return s.ankiClient.UpdateNote(anki.UpdateNoteReq{
+		Id:     noteId,
+		Fields: fields,
+		Tags:   s.tags,
+	})
+}
+
+func (s *AnkiImportService) isNeedUpdate(source Word, noteInfo anki.NoteInfo) bool {
+	var (
+		t      = make(map[string]any)
+		target Word
+	)
+	for key, field := range noteInfo.Fields {
+		t[key] = field.Value
+	}
+
+	err := util.MapToStruct(t, &target)
+	if err != nil {
+		return false
+	}
+
+	source.IpaAudio = ""
+	target.IpaAudio = ""
+	return !reflect.DeepEqual(source, target)
+}
+
 // FindAllWordFromAnki 从 anki 获取名为 deckName 的 deck 所有单词
-func (s *AnkiImportService) FindAllWordFromAnki(deckName string) ([]string, map[string]struct{}, error) {
+func (s *AnkiImportService) FindAllWordFromAnki(deckName string) ([]string, map[string]anki.NoteInfo, error) {
 	// 判断是否有该 word，简单处理一下
 	noteIds, err := s.ankiClient.FindNotes(fmt.Sprintf("deck:%s", deckName))
 	if err != nil {
@@ -188,12 +252,12 @@ func (s *AnkiImportService) FindAllWordFromAnki(deckName string) ([]string, map[
 
 	var (
 		res []string
-		m   = make(map[string]struct{})
+		m   = make(map[string]anki.NoteInfo)
 	)
 	for _, noteInfo := range noteInfos {
 		if v, ok := noteInfo.Fields["word"]; ok {
 			res = append(res, v.Value)
-			m[v.Value] = struct{}{}
+			m[v.Value] = noteInfo
 		}
 	}
 	return res, m, nil

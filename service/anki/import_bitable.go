@@ -25,7 +25,7 @@ func (b *BitTableImporter) Import() ([]Word, error) {
 	var words []Word
 	for _, item := range recordRespData.Items {
 		var word Word
-		if err1 := util.MapToStruct(item.Fields, &word); err1 == nil {
+		if err1 := util.MapToStructByMapTag(item.Fields, &word); err1 == nil {
 			words = append(words, word)
 		}
 	}

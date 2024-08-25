@@ -1,13 +1,14 @@
 package util
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
 )
 
-// MapToStruct 将 map 反序列化到指定的结构体
-func MapToStruct(source map[string]interface{}, dest interface{}) error {
+// MapToStructByMapTag 将 map 反序列化到指定的结构体
+func MapToStructByMapTag(source map[string]interface{}, dest interface{}) error {
 	// 检查 dest 是否是指针且指向结构体
 	val := reflect.ValueOf(dest)
 	if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Struct {
@@ -40,4 +41,32 @@ func MapToStruct(source map[string]interface{}, dest interface{}) error {
 	}
 
 	return nil
+}
+
+// MapToStruct 将 map 反序列化到指定的结构体
+func MapToStruct(source map[string]any, dest any) error {
+	val := reflect.ValueOf(dest)
+	if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Struct {
+		return errors.New("dest should be a pointer to a struct")
+	}
+
+	data, err := json.Marshal(source)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(data, dest)
+}
+
+func StructToMap(source any) (map[string]string, error) {
+	// 先序列化成 map
+	data, err := json.Marshal(&source)
+	if err != nil {
+		return nil, err
+	}
+
+	// 反序列化成 map
+	var res = make(map[string]string)
+	err = json.Unmarshal(data, &res)
+	return res, err
 }

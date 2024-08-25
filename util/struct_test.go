@@ -11,7 +11,7 @@ type User struct {
 	Age  int    `map:"age"`
 }
 
-// TestMapToStruct_Success 用于测试 MapToStruct 的成功情况
+// TestMapToStruct_Success 用于测试 MapToStructByMapTag 的成功情况
 func TestMapToStruct_Success(t *testing.T) {
 	data := map[string]interface{}{
 		"name": "Alice",
@@ -24,7 +24,7 @@ func TestMapToStruct_Success(t *testing.T) {
 	}
 
 	var user User
-	err := MapToStruct(data, &user)
+	err := MapToStructByMapTag(data, &user)
 	if err != nil {
 		t.Fatalf("Expected no error, but got %v", err)
 	}
@@ -34,7 +34,7 @@ func TestMapToStruct_Success(t *testing.T) {
 	}
 }
 
-// TestMapToStruct_MissingFields 测试 MapToStruct 的部分字段缺失情况
+// TestMapToStruct_MissingFields 测试 MapToStructByMapTag 的部分字段缺失情况
 func TestMapToStruct_MissingFields(t *testing.T) {
 	data := map[string]interface{}{
 		"name": "Bob",
@@ -47,7 +47,7 @@ func TestMapToStruct_MissingFields(t *testing.T) {
 	}
 
 	var user User
-	err := MapToStruct(data, &user)
+	err := MapToStructByMapTag(data, &user)
 	if err != nil {
 		t.Fatalf("Expected no error, but got %v", err)
 	}
@@ -57,7 +57,7 @@ func TestMapToStruct_MissingFields(t *testing.T) {
 	}
 }
 
-// TestMapToStruct_InvalidType 测试 MapToStruct 的类型不匹配情况
+// TestMapToStruct_InvalidType 测试 MapToStructByMapTag 的类型不匹配情况
 func TestMapToStruct_InvalidType(t *testing.T) {
 	data := map[string]interface{}{
 		"name": "Charlie",
@@ -65,7 +65,7 @@ func TestMapToStruct_InvalidType(t *testing.T) {
 	}
 
 	var user User
-	err := MapToStruct(data, &user)
+	err := MapToStructByMapTag(data, &user)
 	if err == nil {
 		t.Fatal("Expected an error due to type mismatch, but got no error")
 	} else {
