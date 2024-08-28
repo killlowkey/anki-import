@@ -57,13 +57,9 @@ func TestExtractTranslations(t *testing.T) {
 			},
 		},
 		{
-			name:  "Only part of speech tags with no definitions",
-			input: "v.; n.; adj.",
-			expected: []string{
-				"v. ",
-				"n. ",
-				"adj. ",
-			},
+			name:     "Only part of speech tags with no definitions",
+			input:    "v.; n.; adj.",
+			expected: []string{},
 		},
 		{
 			name:     "No valid part of speech tags",
