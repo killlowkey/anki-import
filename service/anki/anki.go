@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"strings"
 )
 
 type AnkiImportService struct {
@@ -112,7 +113,7 @@ func (s *AnkiImportService) ImportNoteWithWords(words []Word) (err error) {
 			// 翻译
 			if word.DefinitionCn == "" {
 				if explain, _, err1 := s.youDaoClient.TranslateWord(word.Word); err1 == nil {
-					words[index].DefinitionCn = explain
+					words[index].DefinitionCn = strings.Join(util.ExtractTranslations(explain), "\r\n")
 				}
 			}
 
